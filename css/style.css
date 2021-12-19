@@ -1,0 +1,13 @@
+#root {
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+.leftdiv {
+  width: 40%;
+  background-color: rgb(13, 196, 95);
+}
+.rightdiv {
+  width: 60%;
+  background-color: rgb(194, 240, 194);
+}
