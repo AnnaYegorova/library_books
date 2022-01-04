@@ -38,6 +38,9 @@ const books = [
     какими инструментами ему нужно пользоваться.`,
   },
 ];
+if (!localStorage.getItem("books")) {
+  localStorage.setItem("books", JSON.stringify(books));
+}
 
 const root = document.getElementById("root");
 const leftDiv = document.createElement("div");
@@ -58,13 +61,16 @@ leftDiv.append(h2, ul, addBtn);
 
 const refUl = document.querySelector("ul");
 
+if (localStorage.getItem("object")) {
+  createBookMarkUp(JSON.parse(localStorage.getItem("object")));
+}
+
 function renderMarkUp() {
-  const bookMarkUp = books
+  const bookMarkUp = JSON.parse(localStorage.getItem("books"))
     .map(
-      ({
-        title,
-      }) => `<li><p class = "bookTitle">${title}<button class ="editButton">Edit</button>
-    <button class="deleteButton">Delete</button></p></li>`
+      ({ title, id }) => `<li id = ${id}><p class = "bookTitle">${title}</p>
+      <button class ="editButton">Edit</button>
+    <button class="deleteButton">Delete</button></li>`
     )
     .join("");
 
@@ -84,27 +90,153 @@ function renderMarkUp() {
   deleteBtn.forEach((buttonD) => {
     buttonD.addEventListener("click", onDeleteBtnClick);
   });
-
-  const addButton = document.querySelector(".addBtn");
-  addButton.addEventListener("click", onAddBtnClick);
 }
 renderMarkUp();
 
 function renderPreview(event) {
-  // const bookFind = books.find(
-  //   (element) => element.title === event.currentTarget.textContent
-  // );
+  const { title, author, img, plot } = JSON.parse(
+    localStorage.getItem("books")
+  ).find((element) => element.title === event.target.textContent);
   // console.log(bookFind);
-  console.log(123);
+  function bookToFindMarkup(object) {
+    rightDiv.innerHTML = "";
+    const bookMarkUp = `<h2>${title}</h2>
+    <p>${author}</p>
+    <img src = ${img}>
+    <p>${plot}</p>
+    `;
+    rightDiv.insertAdjacentHTML("beforeend", bookMarkUp);
+  }
+  bookToFindMarkup();
+}
+function createBookMarkUp(object) {
+  rightDiv.innerHTML = "";
+  const { title, author, img, plot } = object;
+  localStorage.setItem("object", JSON.stringify(object));
+  return rightDiv.insertAdjacentHTML(
+    "beforeend",
+    `<h2>${title}</h2>
+  <p>${author}</p>
+  <img src = ${img}>
+  <p>${plot}</p>
+
+  `
+  );
 }
 
-function onEditBtnClick() {
+function onEditBtnClick(event) {
   console.log("edit");
+  rightDiv.innerHTML = "";
+  const bookToEdit = event.currentTarget.parentNode;
+  const localeStorageData = JSON.parse(localStorage.getItem("books"));
+  const editBook = localeStorageData.find((element) => {
+    if (element.id === bookToEdit.id) {
+      return element;
+    }
+  });
+  rightDiv.insertAdjacentHTML("beforeend", createFormMarkup(editBook));
+
+  console.log(bookToEdit);
+  console.log(editBook);
+  formFunctionality(editBook);
+  const btnEditSave = document.querySelector(".btn-save");
+  btnEditSave.addEventListener("click", onBtnEditSaveClick);
+
+  function onBtnEditSaveClick(event) {
+    event.preventDefault();
+    console.log("Save Edit Button Click");
+    localStorage.setItem("books", JSON.stringify(localeStorageData));
+    refUl.innerHTML = "";
+    renderMarkUp();
+    createBookMarkUp(editBook);
+    setTimeout(() => alert("Books successfully updated! "), 300);
+  }
 }
-function onDeleteBtnClick() {
-  console.log("delete");
+function onDeleteBtnClick(event) {
+  // console.log("delete");
+  const bookToDelete = event.target.parentNode;
+  console.log(bookToDelete);
+  const localeStorageData = JSON.parse(localStorage.getItem("books"));
+  const bookFind = localeStorageData.find((element) => {
+    if (element.id === bookToDelete.id) {
+      return element;
+    }
+  });
+
+  const newData = localeStorageData.filter((element) => {
+    if (element.id !== bookToDelete.id) {
+      return element;
+    }
+  });
+  console.log(newData);
+  localStorage.setItem("books", JSON.stringify(newData));
+  refUl.innerHTML = "";
+  renderMarkUp(newData);
+  if (rightDiv.children[0] === undefined) {
+    return;
+  }
+  if (rightDiv.children[0].textContent === bookFind.title) {
+    rightDiv.innerHTML = "";
+  }
+}
+
+const addButton = document.querySelector(".addBtn");
+addButton.addEventListener("click", onAddBtnClick);
+
+function createFormMarkup(book) {
+  return `<form>
+  <label>Введите название книги 
+  <input name = "title" type = "text" value = "${book.title}">
+  </label>
+  <label>Введите автора книги<input name = "author"  value = "${book.author}"></label>
+  <label>Вставьте ссылку на картинку <input name = "img"  value = "${book.img}"></label>
+  <label>Введите сюжет книги <input name = "plot"  value = "${book.plot}"></label>
+  <button class = "btn-save">Save</button>
+  </form>`;
+}
+function formFunctionality(objectBook) {
+  const inputAll = document.querySelectorAll("input");
+  // console.log(inputAll);
+  inputAll.forEach((input) => input.addEventListener("change", onInputChange));
+
+  function onInputChange(event) {
+    objectBook[event.target.name] = event.target.value;
+    console.log(objectBook);
+  }
 }
 
 function onAddBtnClick() {
-  console.log("Add new book");
+  rightDiv.innerHTML = "";
+  const newBook = {
+    id: `${Date.now()}`,
+    title: "",
+    author: "",
+    img: "",
+    plot: "",
+  };
+  rightDiv.insertAdjacentHTML("beforeend", createFormMarkup(newBook));
+  formFunctionality(newBook);
+
+  const btnSave = document.querySelector(".btn-save");
+  const inputs = document.querySelectorAll("input");
+  btnSave.addEventListener("click", onSaveBtnClick);
+
+  function onSaveBtnClick(event) {
+    event.preventDefault();
+    inputs.forEach((input) => {
+      if (input.value === "") alert("Заполни все поля");
+      return;
+    });
+    if (newBook.title && newBook.author && newBook.img && newBook.plot) {
+      const oldListBookLS = JSON.parse(localStorage.getItem("books"));
+      const newListBooksLS = [...oldListBookLS, newBook];
+      localStorage.setItem("books", JSON.stringify(newListBooksLS));
+
+      ul.innerHTML = "";
+      renderMarkUp();
+      rightDiv.innerHTML = "";
+      createBookMarkUp(newBook);
+      setTimeout(() => alert("Book added successesfully!"), 300);
+    }
+  }
 }
